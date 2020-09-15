@@ -1,3 +1,7 @@
+# Playbook play_hashicorp_vault
+
+```bash
+
 rm -rf venv/
 
 mkdir -p venv
@@ -15,3 +19,4 @@ ansible --version | head -n 1
 ansible --version | grep "python version"
 
 ansible-playbook -i inventories/test/hosts.ini -v playbook-build.yml
+```
