@@ -1,0 +1,81 @@
+cluster_name = "{{ rl_hashicorp_vault_cluster_name }}"
+max_lease_ttl = "{{ rl_hashicorp_vault_max_lease_ttl }}"
+default_lease_ttl = "{{ rl_hashicorp_vault_default_lease_ttl }}"
+
+disable_clustering = "{{ rl_hashicorp_vault_cluster_disable }}"
+cluster_addr = "{{ rl_hashicorp_vault_cluster_addr }}"
+api_addr = "{{ rl_hashicorp_vault_api_addr }}"
+
+plugin_directory = "{{ rl_hashicorp_vault_plugin_path }}"
+
+listener "tcp" {
+  address = "{{ rl_hashicorp_vault_address }}:{{ rl_hashicorp_vault_port }}"
+  cluster_address = "{{ rl_hashicorp_vault_cluster_address }}"
+  {% if not (rl_hashicorp_vault_tls_disable | bool) -%}
+  tls_cert_file = "{{ rl_hashicorp_vault_tls_config_path }}/{{ rl_hashicorp_vault_tls_cert_file }}"
+  tls_key_file = "{{ rl_hashicorp_vault_tls_config_path }}/{{ rl_hashicorp_vault_tls_key_file }}"
+  tls_client_ca_file="{{ rl_hashicorp_vault_tls_config_path }}/{{ rl_hashicorp_vault_tls_ca_file }}"
+  tls_min_version  = "{{ rl_hashicorp_vault_tls_min_version }}"
+  {% if rl_hashicorp_vault_tls_cipher_suites is defined and rl_hashicorp_vault_tls_cipher_suites -%}
+  tls_cipher_suites = "{{ rl_hashicorp_vault_tls_cipher_suites}}"
+  {% endif -%}
+  tls_prefer_server_cipher_suites = "{{ rl_hashicorp_vault_tls_prefer_server_cipher_suites }}"
+  {% if (rl_hashicorp_vault_tls_require_and_verify_client_cert | bool) -%}
+  tls_require_and_verify_client_cert = "{{ rl_hashicorp_vault_tls_require_and_verify_client_cert | bool | lower}}"
+  {% endif -%}
+  {% if (rl_hashicorp_vault_tls_disable_client_certs | bool) -%}
+  tls_disable_client_certs = "{{ rl_hashicorp_vault_tls_disable_client_certs | bool | lower}}"
+  {% endif -%}
+  {% endif -%}
+  tls_disable = "{{ rl_hashicorp_vault_tls_disable | bool | lower }}"
+}
+
+storage "raft" {
+  path = "{{ rl_hashicorp_vault_data_path }}"
+  node_id = "{{ rl_hashicorp_vault_raft_node_id }}"
+  {% for node in rl_hashicorp_vault_raft_retry_join -%}
+  retry_join {
+  {% if node.leader_api_addr | default('', true) %}
+  leader_api_addr="{{ node.leader_api_addr }}"
+  {% endif -%}
+  {% if node.leader_ca_cert_file | default('', true) %}
+  leader_ca_cert_file="{{ node.leader_ca_cert_file }}"
+  {% endif -%}
+  {% if node.leader_client_cert_file | default('', true) %}
+  leader_client_cert_file="{{ node.leader_client_cert_file }}"
+  {% endif -%}
+  {% if node.leader_client_key_file | default('', true) %}
+  leader_client_key_file="{{ node.leader_client_key_file }}"
+  {% endif -%}
+  {% if node.leader_ca_cert | default('', true) %}
+  leader_ca_cert="{{ node.leader_ca_cert }}"
+  {% endif -%}
+  {% if node.leader_client_cert | default('', true) %}
+  leader_client_cert="{{ node.leader_client_cert }}"
+  {% endif -%}
+  {% if node.leader_client_key | default('', true) %}
+  leader_client_key="{{ node.leader_client_key }}"
+  {% endif -%}
+  }
+  {% endfor %}
+}
+
+{% if rl_hashicorp_vault_seal_transit %}
+seal "transit" {
+  address            = "{{ rl_hashicorp_vault_protocol }}://{{ hostvars[groups['vault'][0]]['ansible_'+rl_hashicorp_vault_iface]['ipv4']['address'] }}:{{ rl_hashicorp_vault_port }}"
+  # token is read from VAULT_TOKEN env
+  # token              = ""
+  disable_renewal    = "false"
+
+  // Key configuration
+  key_name           = "unseal_key"
+  mount_path         = "transit/"
+}
+{% endif %}
+
+
+{% if rl_hashicorp_vault_ui %}
+ui = {{ rl_hashicorp_vault_ui | bool | lower }}
+{% endif %}
+
+disable_mlock = true

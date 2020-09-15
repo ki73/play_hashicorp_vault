@@ -1,0 +1,16 @@
+---
+- name: "{{ role_name }} | Get Services"
+  service_facts:
+  register: firewalld_state
+
+- name: "{{ role_name }} | Open firewall"
+  firewalld:
+    port: "{{ item }}"
+    permanent: yes
+    state: enabled
+    immediate: yes
+  loop:
+    - "{{ rl_hashicorp_vault_port }}/tcp"
+    - "{{ rl_hashicorp_vault_port_cluster }}/tcp"
+  when:
+    - firewalld_state.ansible_facts.services.firewalld.service is defined

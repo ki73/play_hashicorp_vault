@@ -1,0 +1,111 @@
+---
+- name: "{{ role_name }} | Block | Manager group and user"
+  block:
+    - name: "{{ role_name }} | Add Vault group"
+      become: true
+      group:
+        name: "{{ rl_hashicorp_vault_group }}"
+        state: present
+      when: rl_hashicorp_vault_manage_group | bool
+
+    - name: "{{ role_name }} | Add Vault user"
+      become: true
+      user:
+        name: "{{ rl_hashicorp_vault_user }}"
+        comment: "{{ rl_hashicorp_vault_user_comment }}"
+        group: "{{ rl_hashicorp_vault_group }}"
+        groups: "{{ rl_hashicorp_vault_groups }}"
+        system: true
+      when: rl_hashicorp_vault_manage_user | bool
+
+- name: "{{ role_name }} | debug env PATH"
+  debug:
+    msg:
+      - "ansible_env.PATH: {{ ansible_env.PATH }}"
+      - "rl_hashicorp_vault_bin_path: {{ rl_hashicorp_vault_bin_path }}"
+    verbosity: 1
+
+- name: "{{ role_name }} | Check Vault installation"
+  command: command -v vault
+  environment:
+    PATH: "{{ rl_hashicorp_vault_bin_path }}:{{ ansible_env.PATH }}"
+  register: vault_installation
+  changed_when: false
+  ignore_errors: true
+  check_mode: false
+
+- name: "{{ role_name }} | Get installed Vault version"
+  shell: |
+    set -o pipefail
+    {{ vault_installation.stdout }} -version | cut -d' ' -f2 | tr -d 'v'
+  args:
+    executable: /bin/bash
+  when: not vault_installation is failed
+  changed_when: false
+  check_mode: false
+  register: installed_vault_version
+
+- name: "{{ role_name }} | Compute if installation is required"
+  set_fact:
+    installation_required: "{{ vault_installation is failed or installed_vault_version.stdout != rl_hashicorp_vault_version }}"
+
+- name: "{{ role_name }} | Install"
+  import_tasks: install.yml
+  when:
+    - installation_required | bool
+
+- name: "{{ role_name }} | Config"
+  import_tasks: config.yml
+
+- name: "{{ role_name }} | SystemD"
+  import_tasks: systemd.yml
+
+- name: "{{ role_name }} | Restart Vault if needed"
+  meta: flush_handlers
+
+- name: "{{ role_name }} | SystemD"
+  import_tasks: firewall.yml
+
+- name: Insert http(s) export in dotfile
+  lineinfile:
+    path: "{{ rl_hashicorp_vault_home }}/.bashrc"
+    line: "export VAULT_ADDR='{{ rl_hashicorp_vault_tls_disable | ternary('http', 'https') }}://{{ rl_hashicorp_vault_address }}:{{ rl_hashicorp_vault_port }}'"
+    create: true
+    owner: "{{ rl_hashicorp_vault_user }}"
+    group: "{{ rl_hashicorp_vault_group }}"
+    mode: "0700"
+
+# This should succeed regardless of seal state
+- name: Vault API reachable?
+  # Attempt to help with long lines > 160 issues
+  vars:
+    # vault_addr_protocol: "{{ rl_hashicorp_vault_tls_disable | ternary('http', 'https') }}"
+    vault_addr_protocol: "http"
+    vault_addr: "{{ (rl_hashicorp_vault_address == '0.0.0.0') | ternary('127.0.0.1', rl_hashicorp_vault_address) }}"
+  uri:
+    # validate_certs: "{{ validate_certs_during_api_reachable_check | bool }}"
+    url: "{{ vault_addr_protocol }}://{{ rl_hashicorp_vault_hostname | default(vault_addr, true) }}:{{ rl_hashicorp_vault_port }}/v1/sys/health"
+    method: GET
+    # 200 if initialized, unsealed, and active
+    # 429 if unsealed and standby
+    # 472 if data recovery mode replication secondary and active
+    # 473 if performance standby
+    # 501 if not initialized
+    # 503 if sealed
+    # See: https://www.vaultproject.io/api/system/health.html
+    status_code: 200, 429, 472, 473, 501, 503
+    body_format: json
+  register: check_result
+  retries: 6
+  until: check_result is succeeded
+  delay: 5
+  changed_when: false
+  ignore_errors: "{{ rl_hashicorp_vault_check_api_reachable_ignore_errors | default(false) }}"
+
+- name: Vault status
+  debug:
+    msg: "Vault is {{ rl_hashicorp_vault_http_status[check_result.status|string] }}"
+  when: check_result is succeeded
+
+- name: "{{ role_name }} | Import Task | Post Debug"
+  import_tasks: post_debug.yml

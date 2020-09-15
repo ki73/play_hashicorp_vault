@@ -1,0 +1,8 @@
+---
+# handlers file for role-hashicorp-vault
+
+- name: Restart vault
+  become: true
+  service:
+    name: "{{ rl_hashicorp_vault_systemd_service_name }}"
+    state: restarted

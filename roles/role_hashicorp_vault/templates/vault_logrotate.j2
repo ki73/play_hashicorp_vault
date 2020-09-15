@@ -1,0 +1,11 @@
+{{ rl_hashicorp_vault_log_path }}/vault.log
+{
+    missingok
+    rotate {{ rl_hashicorp_vault_logrotate_freq }}
+    daily
+    dateext
+    compress
+    postrotate
+        /bin/systemctl reload vault 2> /dev/null || true
+    endscript
+}

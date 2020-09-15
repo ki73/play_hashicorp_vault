@@ -1,0 +1,100 @@
+---
+- name: "{{ role_name }} | Install | OS packages"
+  become: true
+  yum:
+    name: "{{ rl_hashicorp_vault_os_packages }}"
+    state: present
+
+- name: "{{ role_name }} | Install | Ensure remote vault dir exists"
+  file:
+    path: /tmp/vault
+    state: directory
+    owner: "{{ rl_hashicorp_vault_user }}"
+    group: "{{ rl_hashicorp_vault_group }}"
+    mode: "0770"
+  when:
+    - rl_hashicorp_vault_install_remotely | bool
+
+- name: "{{ role_name }} | Install | Download Vault"
+  get_url:
+    url: "{{ rl_hashicorp_vault_download_url }}"
+    dest: "/tmp/vault/{{ rl_hashicorp_vault_filename }}"
+    mode: '600'
+  become: false
+  run_once: true
+  when:
+   - rl_hashicorp_vault_install_remotely | bool
+
+- name: "{{ role_name }} | Install | Download Vault local"
+  get_url:
+    url: "{{ rl_hashicorp_vault_download_url }}"
+    dest: "{{ role_path }}/files/{{ rl_hashicorp_vault_filename }}"
+    mode: '600'
+  become: false
+  run_once: true
+  when:
+   - not rl_hashicorp_vault_install_remotely | bool
+  delegate_to: localhost
+
+- name: "{{ role_name }} | Install | Unarchive Vault and install binary remote"
+  unarchive:
+    remote_src: true
+    src: "/tmp/vault/{{ rl_hashicorp_vault_filename }}"
+    dest: "{{ rl_hashicorp_vault_bin_path }}"
+    owner: "{{ rl_hashicorp_vault_user }}"
+    group: "{{ rl_hashicorp_vault_group }}"
+    mode: "0770"
+  notify: "Restart vault"
+  when:
+    - rl_hashicorp_vault_install_remotely | bool
+
+- name: "{{ role_name }} | Install | Unarchive Vault (local)"
+  unarchive:
+    src: "{{ role_path }}/files/{{ rl_hashicorp_vault_filename }}"
+    dest: "{{ role_path }}/files/"
+    creates: "{{ role_path }}/files/vault"
+    owner: "{{ rl_hashicorp_vault_user }}"
+    group: "{{ rl_hashicorp_vault_group }}"
+    mode: "0770"
+  become: false
+  run_once: true
+  tags: installation
+  delegate_to: localhost
+  when:
+    - not rl_hashicorp_vault_install_remotely | bool
+
+- name: "{{ role_name }} | Install | Install Vault"
+  become: true
+  copy:
+    src: "{{ role_path }}/files/vault"
+    dest: "{{ rl_hashicorp_vault_bin_path }}"
+    owner: "{{ rl_hashicorp_vault_user }}"
+    group: "{{ rl_hashicorp_vault_group }}"
+    mode: "0755"
+  notify: "Restart vault"
+  when:
+    - rl_hashicorp_vault_install_remotely | bool
+
+- name: "{{ role_name }} | Install | Display paths of all txt files in dir"
+  debug:
+    msg: "Files in folder {{ role_path }}/files/vault: {{ lookup('fileglob', role_path + '/files/vault') }}"
+
+- name: "{{ role_name }} | Install | Cleanup (local)"
+  file:
+    path: "{{ item }}"
+    state: "absent"
+  become: false
+  with_fileglob: 
+    - "{{ role_path }}/files/vault"
+    - "{{ role_path }}/files/vault*.zip"
+  run_once: true
+  delegate_to: localhost
+  when:
+    - not rl_hashicorp_vault_install_remotely | bool
+
+- name: "{{ role_name }} | Install | Cleanup (remote)"
+  file:
+    path: "/tmp/vault"
+    state: absent
+  when:
+    - rl_hashicorp_vault_install_remotely | bool

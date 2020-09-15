@@ -1,0 +1,42 @@
+---
+- name: "Set Exec output to log path when enabled log"
+  set_fact:
+    rl_hashicorp_vault_exec_output: "2>&1 >> {{ rl_hashicorp_vault_log_path }}/vault.log"
+  when:
+    - rl_hashicorp_vault_enable_log | bool
+    - rl_hashicorp_vault_exec_output | length == 0
+
+- name: "{{ role_name }} | extract systemd version"
+  shell: |
+    set -o pipefail
+    systemctl --version systemd | head -n 1 | cut -d' ' -f2
+  args:
+    executable: /bin/bash
+  changed_when: false
+  check_mode: false
+  register: systemd_version
+
+- name: systemd unit
+  become: true
+  template:
+    src: "{{ rl_hashicorp_vault_systemd_template }}"
+    dest: "{{ rl_hashicorp_vault_systemd_service_file_path }}"
+    force: yes
+    owner: root
+    group: root
+    mode: "0644"
+  register: systemd_unit
+
+- name: reload systemd
+  become: true
+  systemd:
+    daemon-reload: true
+  when:
+    - systemd_unit is changed
+
+- name: Start Vault
+  become: true
+  service:
+    name: '{{ rl_hashicorp_vault_systemd_service_name }}'
+    state: started
+    enabled: true

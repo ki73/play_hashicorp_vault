@@ -1,0 +1,28 @@
+- name: "{{ role_name }} | Post Debug | Get Configuration File {{ rl_hashicorp_vault_logrotate_template_dest }}"
+  command: cat "{{ rl_hashicorp_vault_logrotate_template_dest }}"
+  register: file_content_logrotate
+  become: true
+  when: rl_hashicorp_vault_enable_logrotate | bool
+
+- name: "{{ role_name }} | Post Debug | Print Configuration File {{ rl_hashicorp_vault_logrotate_template_dest }}"
+  debug:
+    var: file_content_logrotate.stdout_lines
+  when: rl_hashicorp_vault_enable_logrotate | bool
+
+- name: "{{ role_name }} | Post Debug | Get Configuration Files"
+  command: cat "{{ rl_hashicorp_vault_main_config }}" # noqa 301
+  register: file_content_main_config
+  become: true
+
+- name: "{{ role_name }} | Post Debug | Print Configuration File {{ rl_hashicorp_vault_main_config }}"
+  debug:
+    var: file_content_main_config.stdout_lines
+
+- name: "{{ role_name }} | Post Debug | Get Configuration Files"
+  command: cat "{{ rl_hashicorp_vault_systemd_service_file_path }}" # noqa 301
+  register: file_content_systemd
+  become: true
+
+- name: "{{ role_name }} | Post Debug | Print Configuration File {{ rl_hashicorp_vault_systemd_service_file_path }}"
+  debug:
+    var: file_content_systemd.stdout_lines

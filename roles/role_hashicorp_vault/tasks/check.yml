@@ -1,0 +1,26 @@
+---
+- name: "{{ role_name }} | Check | Debug Variables"
+  debug:
+    msg:
+      - "ansible_distribution: {{ ansible_distribution }}"
+      - "ansible_distribution_version: {{ ansible_distribution_version }}"
+    verbosity: 1
+
+- name: "{{ role_name }} | Check | Distribution Compatibility"
+  fail:
+    msg: "{{ ansible_distribution }} is not supported by this role"
+  when: ansible_distribution not in rl_hashicorp_vault_supported_os
+
+- name: "{{ role_name }} | Check | Fail if not a new release of Red Hat / CentOS"
+  fail:
+    msg: "{{ ansible_distribution_version }} is not a supported version of {{ ansible_distribution }} for this role"
+  when:
+    - ansible_distribution in rl_hashicorp_vault_supported_os
+    - ansible_distribution_version is version(7, '<')
+    
+- name: "{{ role_name }} | Check | Action Variable"
+  fail:
+    msg: 
+      - "Action Variable rl_hashicorp_vault_action must be install or uninstall"
+      - "rl_hashicorp_vault_action: {{ rl_hashicorp_vault_action }}"
+  when: rl_hashicorp_vault_action not in rl_hashicorp_vault_action_variable_list

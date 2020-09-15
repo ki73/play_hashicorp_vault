@@ -1,0 +1,5 @@
+---
+rl_hashicorp_vault_os_packages:
+  - python3-libselinux
+  - git
+  - unzip

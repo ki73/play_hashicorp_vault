@@ -1,0 +1,51 @@
+### BEGIN INIT INFO
+# Provides:          vault
+# Required-Start:    $local_fs $remote_fs
+# Required-Stop:     $local_fs $remote_fs
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Vault agent
+# Description:       Vault secret management tool
+### END INIT INFO
+
+[Unit]
+Description="HashiCorp Vault - A tool for managing secrets"
+Documentation=https://www.vaultproject.io/docs/
+Requires=network-online.target
+After=network-online.target
+ConditionFileNotEmpty={{ rl_hashicorp_vault_main_config }}
+StartLimitInterval=60
+
+[Service]
+User={{ rl_hashicorp_vault_user }}
+Group={{ rl_hashicorp_vault_group }}
+ProtectSystem=full
+ProtectHome=read-only
+PrivateTmp=yes
+PrivateDevices=yes
+SecureBits=keep-caps
+Capabilities=CAP_IPC_LOCK+ep
+{% if variable is defined %}
+{% if systemd_version.stdout is version('230', '>=') %}
+AmbientCapabilities=CAP_SYSLOG CAP_IPC_LOCK
+{% endif %}
+{% else %}
+AmbientCapabilities=CAP_SYSLOG CAP_IPC_LOCK
+{% endif %}
+CapabilityBoundingSet=CAP_SYSLOG CAP_IPC_LOCK
+NoNewPrivileges=yes
+ExecStart=/bin/sh -c '{{ rl_hashicorp_vault_bin_path }}/vault server -config={{ rl_hashicorp_vault_main_config }} -log-level={{ rl_hashicorp_vault_log_level | lower }} {{ rl_hashicorp_vault_exec_output }}'
+ExecReload=/bin/kill --signal HUP $MAINPID
+KillMode=process
+KillSignal=SIGINT
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+StartLimitIntervalSec={{ rl_hashicorp_vault_start_limit_in_terval_sec }}
+StartLimitBurst={{ rl_hashicorp_vault_start_limit_burst }}
+LimitNOFILE=524288
+LimitNPROC=524288
+LimitMEMLOCK=infinity
+
+[Install]
+WantedBy=multi-user.target

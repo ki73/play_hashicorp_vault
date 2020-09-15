@@ -1,0 +1,14 @@
+---
+- hosts: all
+  any_errors_fatal: true
+  tasks:
+    - name: start
+      debug:
+        msg: "Start Build"
+        verbosity: 1
+
+    - name: import role hashicorp vault | install
+      import_role:
+        name: role_hashicorp_vault
+      vars:
+        rl_hashicorp_vault_action: install

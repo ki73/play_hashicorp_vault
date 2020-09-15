@@ -1,0 +1,13 @@
+---
+- hosts: all
+  tasks:
+    - name: start
+      debug:
+        msg: "Start Destroy"
+        verbosity: 1
+
+    - name: import role hashicorp vault | uninstall
+      import_role:
+        name: role-hashicorp-vault
+      vars:
+        rl_hashicorp_vault_action: uninstall

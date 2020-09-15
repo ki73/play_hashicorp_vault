@@ -1,0 +1,17 @@
+---
+# vars file for role-hashicorp-vault
+rl_hashicorp_vault_http_status:
+  '200': '200 - initialized, unsealed, and active'
+  '429': '429 - unsealed and standby'
+  '472': '472 - data recovery mode replication secondary and active'
+  '473': '473 - performance standby'
+  '501': '501 - not initialized'
+  '503': '503 - sealed'
+  
+rl_hashicorp_vault_supported_os: 
+  - RedHat
+  - CentOS
+  
+rl_hashicorp_vault_action_variable_list:
+  - install
+  - uninstall

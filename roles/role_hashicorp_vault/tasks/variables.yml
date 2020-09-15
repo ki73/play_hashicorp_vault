@@ -1,0 +1,30 @@
+---
+- name: "{{ role_name }} | Variables | Debug Variables"
+  debug:
+    msg:
+      - "ansible_distribution: {{ ansible_distribution }}"
+      - "ansible_os_family: {{ ansible_os_family }}"
+      - "ansible_distribution_major_version: {{ ansible_distribution_major_version }}"
+    verbosity: 1
+
+- name: "{{ role_name }} | Variables | Block | Load Variables"
+  block:
+
+    - name: "{{ role_name }} | Variables | Load a variable file based on the OS type, or a default if not found"
+      include_vars: "{{ lookup('first_found', possible_files) }}"
+      vars:
+        possible_files:
+          files:
+            - "{{ ansible_distribution }}-{{ ansible_distribution_major_version }}.yml"
+            - "{{ ansible_distribution }}.yml"
+            - "{{ ansible_os_family }}-{{ ansible_distribution_major_version }}.yml"
+            - "{{ ansible_os_family }}.yml"
+            # - "main.yml"
+          paths:
+            - "vars"
+  rescue:
+    - name: "{{ role_name }} | Variables | Fail - Unsupported Operating System"
+      fail:
+        msg:
+          - "Das Betriebssystem wird von der Rolle {{ role_name }} nicht unterstützt."
+          - "Lesen Sie in der README.md der Rolle, welche Betriebssysteme unterstützt werden."

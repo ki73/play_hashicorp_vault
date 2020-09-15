@@ -1,0 +1,47 @@
+---
+- name: "{{ role_name }} | Check Vault mlock capability"
+  become: true
+  command: "setcap cap_ipc_lock=+ep {{ rl_hashicorp_vault_bin_path }}/vault"
+  changed_when: false  # read-only task
+  ignore_errors: true
+  register: vault_mlock_capability
+
+- name: "{{ role_name }} | Enable non root mlock capability"
+  become: true
+  command: "setcap cap_ipc_lock=+ep {{ rl_hashicorp_vault_bin_path }}/vault"
+  when: vault_mlock_capability is failed
+
+- name: "{{ role_name }} | Create directories"
+  become: true
+  file:
+    dest: "{{ item }}"
+    state: directory
+    owner: "{{ rl_hashicorp_vault_user }}"
+    group: "{{ rl_hashicorp_vault_group }}"
+    mode: "0770"
+  loop:
+    - "{{ rl_hashicorp_vault_config_path }}"
+    - "{{ rl_hashicorp_vault_plugin_path }}"
+    - "{{ rl_hashicorp_vault_data_path }}"
+    - "{{ rl_hashicorp_vault_log_path }}"
+    - "{{ rl_hashicorp_vault_run_path }}"
+
+- name: "{{ role_name }} | Enable logrotate for vault"
+  template:
+    src: "{{ rl_hashicorp_vault_logrotate_template }}"
+    dest: "{{ rl_hashicorp_vault_logrotate_template_dest }}"
+    owner: root
+    group: root
+    mode: 0644
+  when: rl_hashicorp_vault_enable_logrotate | bool
+
+- name: "{{ role_name }} | Vault main configuration"
+  become: true
+  template:
+    src: "{{ rl_hashicorp_vault_main_configuration_template }}"
+    dest: "{{ rl_hashicorp_vault_main_config }}"
+    owner: "{{ rl_hashicorp_vault_user }}"
+    group: "{{ rl_hashicorp_vault_group }}"
+    mode: "0400"
+    backup: true
+  notify: Restart vault

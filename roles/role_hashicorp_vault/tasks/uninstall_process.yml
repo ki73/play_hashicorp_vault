@@ -1,0 +1,8 @@
+---
+- name: "{{ role_name }} | Start Uninstall Process"
+  debug:
+    msg: "Start Uninstall Process"
+    
+- name: "{{ role_name }} | Uninstall Process not implemented"
+  fail:
+    msg: "Uninstall process is not implemented"

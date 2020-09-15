@@ -1,0 +1,272 @@
+---
+rl_hashicorp_vault_action: install
+rl_hashicorp_vault_check_api_reachable_ignore_errors: true
+# Package variables
+rl_hashicorp_vault_version: 1.5.2
+rl_hashicorp_vault_architecture_map:
+  # this first entry seems... redundant (but it's required for reasons)
+  amd64: amd64
+  x86_64: amd64
+  armv7l: arm
+  aarch64: arm64
+rl_hashicorp_vault_architecture: "{{ rl_hashicorp_vault_architecture_map[ansible_architecture] }}"
+rl_hashicorp_vault_os: "{{ ansible_system|lower }}"
+rl_hashicorp_vault_filename: "vault_{{ rl_hashicorp_vault_version }}_{{ rl_hashicorp_vault_os }}_{{ rl_hashicorp_vault_architecture }}.zip"
+rl_hashicorp_vault_download_url_begin: "https://releases.hashicorp.com/vault/"
+rl_hashicorp_vault_download_url: "{{ rl_hashicorp_vault_download_url_begin }}{{ rl_hashicorp_vault_version }}/{{ rl_hashicorp_vault_filename }}"
+
+# Install method variables
+rl_hashicorp_vault_install_remotely: false
+
+# Paths
+rl_hashicorp_vault_bin_path: /usr/local/bin
+rl_hashicorp_vault_config_path: /etc/vault.d
+rl_hashicorp_vault_plugin_path: /usr/local/lib/vault/plugins
+rl_hashicorp_vault_data_path: /var/vault
+rl_hashicorp_vault_log_path: /var/log/vault
+rl_hashicorp_vault_run_path: /var/run/vault
+rl_hashicorp_vault_home: "/home/{{ rl_hashicorp_vault_user }}"
+
+# System user and group
+rl_hashicorp_vault_manage_user: true
+rl_hashicorp_vault_user: vault
+rl_hashicorp_vault_user_comment: Vault User
+rl_hashicorp_vault_manage_group: true
+rl_hashicorp_vault_group: fault
+rl_hashicorp_vault_groups: null
+
+# Logging
+rl_hashicorp_vault_enable_log: false
+rl_hashicorp_vault_enable_logrotate: false
+rl_hashicorp_vault_logrotate_freq: 7
+rl_hashicorp_vault_logrotate_template: vault_logrotate.j2
+rl_hashicorp_vault_logrotate_template_dest: /etc/logrotate.d/vault
+rl_hashicorp_vault_exec_output: ''
+
+# ---------------------------------------------------------------------------
+# Vault variables
+# ---------------------------------------------------------------------------
+
+rl_hashicorp_vault_group_name: vault_instances
+rl_hashicorp_vault_cluster_name: dc1
+rl_hashicorp_vault_datacenter: dc1
+rl_hashicorp_vault_log_level: "{{ lookup('env','VAULT_LOG_LEVEL') | default('info', true) }}"
+rl_hashicorp_vault_iface: "{{ lookup('env','VAULT_IFACE') | default(ansible_default_ipv4.interface, true) }}"
+rl_hashicorp_vault_address: "{{ hostvars[inventory_hostname]['ansible_'+rl_hashicorp_vault_iface]['ipv4']['address'] }}"
+rl_hashicorp_vault_ui: "{{ lookup('env', 'VAULT_UI') | default(true, true) }}"
+rl_hashicorp_vault_port: 8200
+rl_hashicorp_vault_port_cluster: "{{ (rl_hashicorp_vault_port | int) + 1}}"
+rl_hashicorp_vault_main_config: "{{ rl_hashicorp_vault_config_path }}/vault_main.hcl"
+rl_hashicorp_vault_main_configuration_template: vault_main_configuration.hcl.j2
+
+# ---------------------------------------------------------------------------
+# Storage backend
+# ---------------------------------------------------------------------------
+
+rl_hashicorp_vault_backend: consul
+rl_hashicorp_vault_backend_consul: vault_backend_consul.j2
+rl_hashicorp_vault_backend_file: vault_backend_file.j2
+rl_hashicorp_vault_backend_raft: vault_backend_raft.j2
+rl_hashicorp_vault_backend_etcd: vault_backend_etcd.j2
+rl_hashicorp_vault_backend_s3: vault_backend_s3.j2
+rl_hashicorp_vault_backend_dynamodb: vault_backend_dynamodb.j2
+rl_hashicorp_vault_backend_mysql: vault_backend_mysql.j2
+
+rl_hashicorp_vault_cluster_disable: false
+rl_hashicorp_vault_cluster_address: "{{ hostvars[inventory_hostname]['ansible_'+rl_hashicorp_vault_iface]['ipv4']['address'] }}:{{ (rl_hashicorp_vault_port | int) + 1}}"
+rl_hashicorp_vault_cluster_addr: "{{ rl_hashicorp_vault_protocol }}://{{ rl_hashicorp_vault_cluster_address }}"
+rl_hashicorp_vault_api_addr: "{{ rl_hashicorp_vault_protocol }}://{{ rl_hashicorp_vault_redirect_address | default(hostvars[inventory_hostname]['ansible_'+rl_hashicorp_vault_iface]['ipv4']['address']) }}:{{ rl_hashicorp_vault_port }}"
+
+rl_hashicorp_vault_max_lease_ttl: "768h"
+rl_hashicorp_vault_default_lease_ttl: "768h"
+
+# Storage tls settings
+rl_hashicorp_vault_backend_tls_src_files: "{{ rl_hashicorp_vault_tls_src_files }}"
+rl_hashicorp_vault_backend_tls_config_path: "{{ rl_hashicorp_vault_tls_config_path }}"
+rl_hashicorp_vault_backend_tls_cert_file: "{{ rl_hashicorp_vault_tls_cert_file }}"
+rl_hashicorp_vault_backend_tls_key_file: "{{ rl_hashicorp_vault_tls_key_file }}"
+rl_hashicorp_vault_backend_tls_ca_file: "{{ rl_hashicorp_vault_tls_ca_file }}"
+
+# Consul storage settings
+rl_hashicorp_vault_consul: 127.0.0.1:8500
+rl_hashicorp_vault_consul_path: vault
+rl_hashicorp_vault_consul_service: vault
+rl_hashicorp_vault_consul_scheme: http
+# vault_consul_token:
+
+# etcd storage settings
+rl_hashicorp_vault_etcd: 127.0.0.1:2379
+rl_hashicorp_vault_etcd_api: v3
+rl_hashicorp_vault_etcd_path: /vault/
+rl_hashicorp_vault_etcd_discovery_srv: ""
+rl_hashicorp_vault_etcd_discovery_srv_name: ""
+rl_hashicorp_vault_etcd_ha_enabled: false
+rl_hashicorp_vault_etcd_sync: true
+rl_hashicorp_vault_etcd_username: ""
+rl_hashicorp_vault_etcd_password: ""
+rl_hashicorp_vault_etcd_request_timeout: "5s"
+rl_hashicorp_vault_etcd_lock_timeout: "15s"
+
+# s3 storage settings
+rl_hashicorp_vault_s3_access_key: ""
+rl_hashicorp_vault_s3_secret_key: ""
+rl_hashicorp_vault_s3_bucket: "vault_backend"
+rl_hashicorp_vault_s3_region: "us-east-1"
+rl_hashicorp_vault_s3_endpoint: ""
+rl_hashicorp_vault_s3_disable_ssl: false
+rl_hashicorp_vault_s3_force_path_style: false
+rl_hashicorp_vault_s3_kms_key_id: ""
+rl_hashicorp_vault_s3_session_token: ""
+rl_hashicorp_vault_s3_max_parallel: "128"
+
+# dynamodb storage settings
+rl_hashicorp_vault_dynamodb: "{{ lookup('env', 'AWS_DYNAMODB_ENDPOINT') | default('', false) }}"
+rl_hashicorp_vault_dynamodb_table: "{{ lookup('env', 'AWS_DYNAMODB_TABLE') | default('vault-dynamodb-backend', false) }}"
+rl_hashicorp_vault_dynamodb_ha_enabled: "{{ lookup('env', 'DYNAMODB_HA_ENABLED') | default('false', false) }}"
+rl_hashicorp_vault_dynamodb_max_parallel: "128"
+rl_hashicorp_vault_dynamodb_region: "{{ lookup('env','AWS_DEFAULT_REGION') | default('us-east-1', false) }}"
+rl_hashicorp_vault_dynamodb_read_capacity: "{{ lookup('env', 'AWS_DYNAMODB_READ_CAPACITY') | default('5', false) }}"
+rl_hashicorp_vault_dynamodb_write_capacity: "{{ lookup('env', 'AWS_DYNAMODB_WRITE_CAPACITY') | default('5', false) }}"
+rl_hashicorp_vault_dynamodb_access_key: "{{ lookup('env','AWS_ACCESS_KEY_ID') | default('', false) }}"
+rl_hashicorp_vault_dynamodb_secret_key: "{{ lookup('env','AWS_SECRET_ACCESS_KEY') | default('', false) }}"
+rl_hashicorp_vault_dynamodb_session_token: "{{ lookup('env', 'AWS_SESSION_TOKEN') | default('', false) }}"
+
+# mysql storage settings
+rl_hashicorp_vault_mysql: ""
+rl_hashicorp_vault_mysql_username: ""
+rl_hashicorp_vault_mysql_password: ""
+rl_hashicorp_vault_mysql_database: ""
+rl_hashicorp_vault_mysql_table: ""
+rl_hashicorp_vault_mysql_tls_ca_file: ""
+rl_hashicorp_vault_mysql_max_parallel: ""
+rl_hashicorp_vault_mysql_max_idle_connections: ""
+rl_hashicorp_vault_mysql_max_connection_lifetime: ""
+
+# raft storage settings
+rl_hashicorp_vault_raft_node_id: "raft_node_1"
+rl_hashicorp_vault_raft_retry_join: []
+  # - leader_api_addr:
+  #   leader_ca_cert_file:
+  #   leader_client_cert_file:
+  #   leader_client_key_file:
+  #   leader_ca_cert:
+  #   leader_client_cert:
+  #   leader_client_key:
+  
+rl_hashicorp_vault_seal_transit: true
+
+# ---------------------------------------------------------------------------
+# Service registration variables
+# ---------------------------------------------------------------------------
+
+# Consul service registration settings
+rl_hashicorp_vault_service_registration_consul_enable: false
+rl_hashicorp_vault_service_registration_consul_template: vault_service_registration_consul.hcl.j2
+rl_hashicorp_vault_service_registration_consul_check_timeout: 5s
+rl_hashicorp_vault_service_registration_consul_address: 127.0.0.1:8500
+rl_hashicorp_vault_service_registration_consul_service: vault
+rl_hashicorp_vault_service_registration_consul_service_tags: ""
+rl_hashicorp_vault_service_registration_consul_service_address:
+rl_hashicorp_vault_service_registration_consul_disable_registration: false
+rl_hashicorp_vault_service_registration_consul_scheme: http
+# vault_service_registration_consul_token:
+
+# Consul service registration tls settings
+rl_hashicorp_vault_service_registration_consul_tls_config_path: "{{ rl_hashicorp_vault_tls_config_path }}"
+rl_hashicorp_vault_service_registration_consul_tls_cert_file: "{{ rl_hashicorp_vault_tls_cert_file }}"
+rl_hashicorp_vault_service_registration_consul_tls_key_file: "{{ rl_hashicorp_vault_tls_key_file }}"
+rl_hashicorp_vault_service_registration_consul_tls_ca_file: "{{ rl_hashicorp_vault_tls_ca_file }}"
+rl_hashicorp_vault_service_registration_consul_tls_min_version: "{{ rl_hashicorp_vault_tls_min_version }}"
+rl_hashicorp_vault_service_registration_consul_tls_skip_verify: false
+
+# Kubernetes service registration settings
+rl_hashicorp_vault_service_registration_kubernetes_enable: false
+rl_hashicorp_vault_service_registration_kubernetes_template: vault_service_registration_kubernetes.hcl.j2
+rl_hashicorp_vault_service_registration_kubernetes_namespace: vault
+rl_hashicorp_vault_service_registration_kubernetes_pod_name: vault
+
+# ---------------------------------------------------------------------------
+# Initialization and startup script templates
+# ---------------------------------------------------------------------------
+
+rl_hashicorp_vault_bsdinit_template: vault_service_bsd_init.j2
+rl_hashicorp_vault_sysvinit_template: vault_sysvinit.j2
+rl_hashicorp_vault_debian_init_template: vault_service_debian_init.j2
+rl_hashicorp_vault_systemd_template: vault_service_systemd.j2
+rl_hashicorp_vault_systemd_service_name: vault
+rl_hashicorp_vault_systemd_service_file_path: "/lib/systemd/system/{{ rl_hashicorp_vault_systemd_service_name }}.service"
+
+# ---------------------------------------------------------------------------
+# TLS variables
+# ---------------------------------------------------------------------------
+
+# NB: at the end of the role there's a API Reachability check; if you rely on
+# self-signed certificates you might need to change the following to false
+validate_certs_during_api_reachable_check: true
+
+rl_hashicorp_vault_tls_config_path: "{{ lookup('env','VAULT_TLS_DIR') | default('/etc/vault/tls', true) }}"
+rl_hashicorp_vault_tls_src_files: "{{ lookup('env','VAULT_TLS_SRC_FILES') | default(role_path+'/files', true) }}"
+
+rl_hashicorp_vault_tls_disable: "{{ lookup('env','VAULT_TLS_DISABLE') | default(1, true) }}"
+rl_hashicorp_vault_tls_gossip: "{{ lookup('env','VAULT_TLS_GOSSIP') | default(0, true) }}"
+
+rl_hashicorp_vault_tls_copy_keys: true
+rl_hashicorp_vault_protocol: "{% if rl_hashicorp_vault_tls_disable %}http{% else %}https{% endif %}"
+rl_hashicorp_vault_tls_cert_file: "{{ lookup('env','VAULT_TLS_CERT_FILE') | default('server.crt', true) }}"
+rl_hashicorp_vault_tls_key_file: "{{ lookup('env','VAULT_TLS_KEY_FILE') | default('server.key', true) }}"
+rl_hashicorp_vault_tls_ca_file: "{{ lookup('env','VAULT_TLS_CA_CRT') | default('ca.crt', true) }}"
+
+rl_hashicorp_vault_tls_min_version: "{{ lookup('env','VAULT_TLS_MIN_VERSION') | default('tls12', true) }}"
+rl_hashicorp_vault_tls_cipher_suites: ""
+rl_hashicorp_vault_tls_prefer_server_cipher_suites: "{{ lookup('env','VAULT_TLS_PREFER_SERVER_CIPHER_SUITES') | default('false', true) }}"
+rl_hashicorp_vault_tls_files_remote_src: false
+rl_hashicorp_vault_tls_require_and_verify_client_cert: false
+rl_hashicorp_vault_tls_disable_client_certs: false
+
+# ---------------------------------------------------------------------------
+# Seal variables
+# ---------------------------------------------------------------------------
+
+# awskms seal
+rl_hashicorp_vault_awskms: false
+rl_hashicorp_vault_awskms_backend: vault_seal_awskms.j2
+rl_hashicorp_vault_awskms_region: "{{ lookup('env','AWS_DEFAULT_REGION') | default('us-east-1', false) }}"
+rl_hashicorp_vault_awskms_access_key: "{{ lookup('env','AWS_ACCESS_KEY_ID') | default('', false) }}"
+rl_hashicorp_vault_awskms_secret_key: "{{ lookup('env','AWS_SECRET_ACCESS_KEY') | default('', false) }}"
+rl_hashicorp_vault_awskms_key_id: "{{ lookup('env','VAULT_AWSKMS_SEAL_KEY_ID') | default('', false) }}"
+rl_hashicorp_vault_awskms_endpoint: "{{ lookup('env','AWS_KMS_ENDPOINT') | default('', false) }}"
+
+# azurekeyvault seal
+rl_hashicorp_vault_azurekeyvault: false
+rl_hashicorp_vault_azurekeyvault_backend: vault_seal_azurekeyvault.j2
+
+# gcpkms seal
+rl_hashicorp_vault_gkms: false
+rl_hashicorp_vault_backend_gkms: vault_seal_gcpkms.j2
+rl_hashicorp_vault_gkms_project: ''
+rl_hashicorp_vault_gkms_credentials_src_file: ''
+rl_hashicorp_vault_gkms_credentials: '/home/vault/vault-kms.json'
+rl_hashicorp_vault_gkms_region: 'global'
+rl_hashicorp_vault_gkms_key_ring: 'vault'
+rl_hashicorp_vault_gkms_crypto_key: 'vault_key'
+
+# pkcs11 seal
+rl_hashicorp_vault_enterprise_premium_hsm: false
+# WARNING: the following variable is deprecated as this section will become
+#          _only_ a pkcs11 seal soon. Please take note that vault_hsm_app will
+#          soon be removed!
+rl_hashicorp_vault_hsm_app: pkcs11
+rl_hashicorp_vault_backend_seal: vault_seal_pkcs11.j2
+rl_hashicorp_vault_seal_lib: /lib64/hsmlibrary.so
+rl_hashicorp_vault_seal_pin: 12345
+rl_hashicorp_vault_seal_key_label: vault-hsm-key
+rl_hashicorp_vault_seal_generate_key: false
+rl_hashicorp_vault_seal_key_mechanism: ''
+rl_hashicorp_vault_seal_token_label: ''
+rl_hashicorp_vault_seal_slot: 0
+rl_hashicorp_vault_softcard_enable: false
+rl_hashicorp_vault_telemetry_enabled: false
+
+# Systemd Service file
+rl_hashicorp_vault_start_limit_in_terval_sec: 5
+rl_hashicorp_vault_start_limit_burst: 50
