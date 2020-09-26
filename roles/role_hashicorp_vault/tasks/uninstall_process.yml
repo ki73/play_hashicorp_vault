@@ -3,6 +3,41 @@
   debug:
     msg: "Start Uninstall Process"
     
-- name: "{{ role_name }} | Uninstall Process not implemented"
-  fail:
-    msg: "Uninstall process is not implemented"
+- name: "{{ role_name }} | Firewall"
+  import_tasks: firewall.yml
+  vars:
+    rl_hashicorp_vault_firewalld_state: "disabled"
+   
+- name: "{{ role_name }} | Stop Vault"
+  become: true
+  service:
+    name: '{{ rl_hashicorp_vault_systemd_service_name }}'
+    state: stopped
+    enabled: false
+  when: ansible_facts.services.vault.service is defined
+    
+- name: "{{ role_name }} | delete systemd config file"
+  file:
+    path: "{{ rl_hashicorp_vault_systemd_service_file_path }}"
+    state: absent
+  register: delete_systemd_output
+
+- name: reload systemd
+  become: true
+  systemd:
+    daemon-reload: true
+  when:
+    - delete_systemd_output is changed
+    
+- name: delete folder and files
+  file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - "{{ rl_hashicorp_vault_config_path }}"
+    - "{{ rl_hashicorp_vault_plugin_path }}"
+    - "{{ rl_hashicorp_vault_data_path }}"
+    - "{{ rl_hashicorp_vault_log_path }}"
+    - "{{ rl_hashicorp_vault_run_path }}"
+    - "{{ rl_hashicorp_vault_logrotate_template_dest }}"
+    - "{{ rl_hashicorp_vault_bin_path }}/vault"

@@ -1,10 +1,12 @@
 ---
+# Benötigte Pakete installieren
 - name: "{{ role_name }} | Install | OS packages"
   become: true
   yum:
     name: "{{ rl_hashicorp_vault_os_packages }}"
     state: present
 
+# Ordneer /tmp/vault erstellen
 - name: "{{ role_name }} | Install | Ensure remote vault dir exists"
   file:
     path: /tmp/vault
@@ -15,6 +17,7 @@
   when:
     - rl_hashicorp_vault_install_remotely | bool
 
+# Hashicorp Vault ZIP-Datei herunterladen
 - name: "{{ role_name }} | Install | Download Vault"
   get_url:
     url: "{{ rl_hashicorp_vault_download_url }}"
@@ -25,6 +28,7 @@
   when:
    - rl_hashicorp_vault_install_remotely | bool
 
+# Hashicorp Vault ZIP-Datei auf Ansible Host herunterladen
 - name: "{{ role_name }} | Install | Download Vault local"
   get_url:
     url: "{{ rl_hashicorp_vault_download_url }}"
@@ -36,6 +40,7 @@
    - not rl_hashicorp_vault_install_remotely | bool
   delegate_to: localhost
 
+# ZIP-Datei auf Zielsystem entpacken nach /usr/local/bin
 - name: "{{ role_name }} | Install | Unarchive Vault and install binary remote"
   unarchive:
     remote_src: true
@@ -48,6 +53,7 @@
   when:
     - rl_hashicorp_vault_install_remotely | bool
 
+# ZIP-Datei auf auf Ansible Host entpacken 
 - name: "{{ role_name }} | Install | Unarchive Vault (local)"
   unarchive:
     src: "{{ role_path }}/files/{{ rl_hashicorp_vault_filename }}"
@@ -63,6 +69,7 @@
   when:
     - not rl_hashicorp_vault_install_remotely | bool
 
+# Vault Binary von Ansible Host auf Zielhost übertragen
 - name: "{{ role_name }} | Install | Install Vault"
   become: true
   copy:
@@ -73,28 +80,11 @@
     mode: "0755"
   notify: "Restart vault"
   when:
-    - rl_hashicorp_vault_install_remotely | bool
+    - not rl_hashicorp_vault_install_remotely | bool
 
 - name: "{{ role_name }} | Install | Display paths of all txt files in dir"
   debug:
     msg: "Files in folder {{ role_path }}/files/vault: {{ lookup('fileglob', role_path + '/files/vault') }}"
 
-- name: "{{ role_name }} | Install | Cleanup (local)"
-  file:
-    path: "{{ item }}"
-    state: "absent"
-  become: false
-  with_fileglob: 
-    - "{{ role_path }}/files/vault"
-    - "{{ role_path }}/files/vault*.zip"
-  run_once: true
-  delegate_to: localhost
-  when:
-    - not rl_hashicorp_vault_install_remotely | bool
-
-- name: "{{ role_name }} | Install | Cleanup (remote)"
-  file:
-    path: "/tmp/vault"
-    state: absent
-  when:
-    - rl_hashicorp_vault_install_remotely | bool
+- name: "{{ role_name }} | Install | Cleanup"
+  import_tasks: cleanup.yml

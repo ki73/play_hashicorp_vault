@@ -3,11 +3,11 @@
   service_facts:
   register: firewalld_state
 
-- name: "{{ role_name }} | Open firewall"
-  firewalld:
+- name: "{{ role_name }} | firewall state {{ rl_hashicorp_vault_firewalld_state }}"
+  ansible.posix.firewalld:
     port: "{{ item }}"
     permanent: yes
-    state: enabled
+    state: "{{ rl_hashicorp_vault_firewalld_state | default('enabled') }}"
     immediate: yes
   loop:
     - "{{ rl_hashicorp_vault_port }}/tcp"

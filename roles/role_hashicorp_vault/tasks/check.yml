@@ -21,6 +21,6 @@
 - name: "{{ role_name }} | Check | Action Variable"
   fail:
     msg: 
-      - "Action Variable rl_hashicorp_vault_action must be install or uninstall"
+      - "Action Variable rl_hashicorp_vault_action must be {{ rl_hashicorp_vault_action_variable_list }}"
       - "rl_hashicorp_vault_action: {{ rl_hashicorp_vault_action }}"
   when: rl_hashicorp_vault_action not in rl_hashicorp_vault_action_variable_list

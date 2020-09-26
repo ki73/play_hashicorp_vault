@@ -63,7 +63,7 @@
 - name: "{{ role_name }} | Restart Vault if needed"
   meta: flush_handlers
 
-- name: "{{ role_name }} | SystemD"
+- name: "{{ role_name }} | Firewall"
   import_tasks: firewall.yml
 
 - name: Insert http(s) export in dotfile
@@ -75,16 +75,28 @@
     group: "{{ rl_hashicorp_vault_group }}"
     mode: "0700"
 
-# This should succeed regardless of seal state
-- name: Vault API reachable?
-  # Attempt to help with long lines > 160 issues
-  vars:
-    # vault_addr_protocol: "{{ rl_hashicorp_vault_tls_disable | ternary('http', 'https') }}"
-    vault_addr_protocol: "http"
+- name: "{{ role_name }} | Set vars for API test 1"
+  ansible.builtin.set_fact:
     vault_addr: "{{ (rl_hashicorp_vault_address == '0.0.0.0') | ternary('127.0.0.1', rl_hashicorp_vault_address) }}"
+
+- name: "{{ role_name }} | Set vars for API test 2"
+  ansible.builtin.set_fact:
+    vault_full_url: "{{ rl_hashicorp_vault_api_test_protocol }}://{{ rl_hashicorp_vault_hostname | default(vault_addr, true) }}:{{ rl_hashicorp_vault_port }}/v1/sys/health"
+
+- name: "{{ role_name }} | Debug vars API test"
+  debug:
+    msg:
+      - "rl_hashicorp_vault_hostname: {{ rl_hashicorp_vault_hostname | default('EMPTY') }}"
+      - "vault_addr: {{ vault_addr | default('EMPTY') }}"
+      - "rl_hashicorp_vault_port: {{ rl_hashicorp_vault_port }}"
+      - "vault_full_url: {{ vault_full_url }}"
+    verbosity: 1
+
+# This should succeed regardless of seal state
+- name: "{{ role_name }} | Vault API reachable?"
   uri:
     # validate_certs: "{{ validate_certs_during_api_reachable_check | bool }}"
-    url: "{{ vault_addr_protocol }}://{{ rl_hashicorp_vault_hostname | default(vault_addr, true) }}:{{ rl_hashicorp_vault_port }}/v1/sys/health"
+    url: "{{ vault_full_url }}"
     method: GET
     # 200 if initialized, unsealed, and active
     # 429 if unsealed and standby
@@ -102,10 +114,16 @@
   changed_when: false
   ignore_errors: "{{ rl_hashicorp_vault_check_api_reachable_ignore_errors | default(false) }}"
 
-- name: Vault status
+- name: "{{ role_name }} | Print Vault status on successful api test"
   debug:
     msg: "Vault is {{ rl_hashicorp_vault_http_status[check_result.status|string] }}"
   when: check_result is succeeded
 
-- name: "{{ role_name }} | Import Task | Post Debug"
-  import_tasks: post_debug.yml
+- name: "{{ role_name }} | Import Task | Print file content"
+  include_tasks: print_file_content.yml
+  vars:
+    vault_file_path: "{{ item }}"
+  loop:
+    - "{{ rl_hashicorp_vault_logrotate_template_dest }}"
+    - "{{ rl_hashicorp_vault_main_config }}"
+    - "{{ rl_hashicorp_vault_systemd_service_file_path }}"

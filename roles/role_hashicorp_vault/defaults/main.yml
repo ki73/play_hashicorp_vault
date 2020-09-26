@@ -1,6 +1,6 @@
 ---
 rl_hashicorp_vault_action: install
-rl_hashicorp_vault_check_api_reachable_ignore_errors: true
+rl_hashicorp_vault_check_api_reachable_ignore_errors: false
 # Package variables
 rl_hashicorp_vault_version: 1.5.2
 rl_hashicorp_vault_architecture_map:
@@ -36,8 +36,8 @@ rl_hashicorp_vault_group: fault
 rl_hashicorp_vault_groups: null
 
 # Logging
-rl_hashicorp_vault_enable_log: false
-rl_hashicorp_vault_enable_logrotate: false
+rl_hashicorp_vault_enable_log: true
+rl_hashicorp_vault_enable_logrotate: true
 rl_hashicorp_vault_logrotate_freq: 7
 rl_hashicorp_vault_logrotate_template: vault_logrotate.j2
 rl_hashicorp_vault_logrotate_template_dest: /etc/logrotate.d/vault

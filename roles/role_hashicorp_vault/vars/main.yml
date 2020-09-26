@@ -15,3 +15,5 @@ rl_hashicorp_vault_supported_os:
 rl_hashicorp_vault_action_variable_list:
   - install
   - uninstall
+  
+rl_hashicorp_vault_api_test_protocol: http

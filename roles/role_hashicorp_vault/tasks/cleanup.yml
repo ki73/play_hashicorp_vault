@@ -1,0 +1,16 @@
+---
+- name: "{{ role_name }} | Cleanup (local)"
+  file:
+    path: "{{ item }}"
+    state: "absent"
+  become: false
+  with_fileglob: 
+    - "{{ role_path }}/files/vault"
+    - "{{ role_path }}/files/vault*.zip"
+  run_once: true
+  delegate_to: localhost
+  
+- name: "{{ role_name }} | Cleanup (remote)"
+  file:
+    path: "/tmp/vault"
+    state: absent

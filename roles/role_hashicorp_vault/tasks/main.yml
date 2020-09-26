@@ -6,27 +6,21 @@
     msg: "Start {{ role_name }} - Action: {{ rl_hashicorp_vault_action }}"
     verbosity: 1
 
-- name: "{{ role_name }} | Import Task | Variables"
-  import_tasks: variables.yml
+- name: "{{ role_name }} | Block | Execute Role"
+  block:
+    - name: "{{ role_name }} | Import Task | Variables"
+      import_tasks: variables.yml
 
-- name: "{{ role_name }} | Import Task | Check"
-  import_tasks: check.yml
+    - name: "{{ role_name }} | Import Task | Check"
+      import_tasks: check.yml
 
-- name: "{{ role_name }} | Import Task | Install Process"
-  import_tasks: install_process.yml
-  when: rl_hashicorp_vault_action == "install"
+    - name: "{{ role_name }} | Import Task | Install Process"
+      import_tasks: install_process.yml
+      when: rl_hashicorp_vault_action == "install"
 
-- name: "{{ role_name }} | Import Task | Uninstall Process"
-  import_tasks: uninstall_process.yml
-  when: rl_hashicorp_vault_action == "uninstall"
-
-- name: "{{ role_name }} | Cleanup (local)"
-  file:
-    path: "{{ item }}"
-    state: "absent"
-  become: false
-  with_fileglob: 
-    - "{{ role_path }}/files/vault"
-    - "{{ role_path }}/files/vault*.zip"
-  run_once: true
-  delegate_to: localhost
+    - name: "{{ role_name }} | Import Task | Uninstall Process"
+      import_tasks: uninstall_process.yml
+      when: rl_hashicorp_vault_action == "uninstall"
+  always:
+    - name: "{{ role_name }} | Import Task | Cleanup"
+      import_tasks: cleanup.yml

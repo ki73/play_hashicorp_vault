@@ -25,14 +25,14 @@
     owner: root
     group: root
     mode: "0644"
-  register: systemd_unit
+  register: install_systemd_output
 
 - name: reload systemd
   become: true
   systemd:
     daemon-reload: true
   when:
-    - systemd_unit is changed
+    - install_systemd_output is changed
 
 - name: Start Vault
   become: true

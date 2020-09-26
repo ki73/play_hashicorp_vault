@@ -8,6 +8,6 @@
 
     - name: import role hashicorp vault | uninstall
       import_role:
-        name: role-hashicorp-vault
+        name: role_hashicorp_vault
       vars:
         rl_hashicorp_vault_action: uninstall

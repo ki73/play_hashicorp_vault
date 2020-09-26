@@ -1,3 +1,5 @@
+---
+- name: 
 - name: "{{ role_name }} | Post Debug | Get Configuration File {{ rl_hashicorp_vault_logrotate_template_dest }}"
   command: cat "{{ rl_hashicorp_vault_logrotate_template_dest }}"
   register: file_content_logrotate

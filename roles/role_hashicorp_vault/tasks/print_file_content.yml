@@ -1,0 +1,21 @@
+---
+- name: "{{ role_name }} | Print file | Check file exists | {{ vault_file_path }}"
+  ansible.builtin.stat:
+    path: "{{ vault_file_path }}"
+  register: stat_result
+  
+- name: "{{ role_name }} | Print file | File not exists"
+  debug:
+    msg: "Datei {{ vault_file_path }} existiert nicht"
+  when: not stat_result.stat.exists
+
+- name: "{{ role_name }} | Print file | Get file content | {{ vault_file_path }}"
+  command: cat "{{ vault_file_path }}" # noqa 301
+  register: file_content
+  become: true
+  when: stat_result.stat.exists
+
+- name: "{{ role_name }} | Print file | Print file content | {{ vault_file_path }}"
+  debug:
+    var: file_content.stdout_lines
+  when: stat_result.stat.exists
