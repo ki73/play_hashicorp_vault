@@ -22,6 +22,5 @@ ansible --version | grep "python version"
 ansible-playbook -i inventories/test/hosts.ini -v playbook-build.yml
 ansible-playbook -i inventories/test/hosts.ini -v playbook-destroy.yml
 
-ansible-playbook -i inventories/test/hosts.ini -v playbook-rebuild.yml
 ansible-playbook -i inventories/test/hosts.ini -v -e "rl_hashicorp_vault_check_api_reachable_ignore_errors=true" playbook-rebuild.yml
 ```
